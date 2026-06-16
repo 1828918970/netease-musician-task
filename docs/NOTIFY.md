@@ -104,6 +104,16 @@ CUSTOM_WEBHOOK_BODY=${content}
 
 > ntfy 的 Title 在 Header 中传递，body 直接是纯文本，`CUSTOM_WEBHOOK_BODY` 填非 JSON 的纯文本也可以正常发送。
 
+### PushPlus（微信推送）
+
+```env
+CUSTOM_WEBHOOK_URL=https://www.pushplus.plus/send
+CUSTOM_WEBHOOK_METHOD=POST
+CUSTOM_WEBHOOK_BODY={"token":"your_token","title":"${title}","content":"${content}","template":"txt"}
+```
+
+> `template` 支持 `txt`（纯文本）、`html`、`markdown` 等，建议用 `txt` 避免 HTML 转义。其他可选参数（`channel`、`option` 等）直接追加到 JSON 模板里即可。
+
 ---
 
 ## 四、触发场景
