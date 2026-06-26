@@ -157,11 +157,18 @@ def _click_first(page: Page | Frame, locator_or_text: str, *, exact_text: bool =
                     loc = scope.get_by_text(locator_or_text, exact=True)
                 else:
                     loc = scope.locator(locator_or_text)
-                if loc.count() == 0:
+                count = loc.count()
+                if count == 0:
                     continue
-                loc.first.wait_for(state="visible", timeout=5000)
-                loc.first.click()
-                return scope
+                for i in range(count):
+                    candidate = loc.nth(i)
+                    try:
+                        candidate.wait_for(state="visible", timeout=800)
+                        candidate.click()
+                        return scope
+                    except Exception as e:
+                        last_err = e
+                        continue
             except Exception as e:
                 last_err = e
                 continue
@@ -256,12 +263,18 @@ def _fill_first(page: Page | Frame, selector: str, value: str, *, timeout: int =
         for scope in _scopes(page):
             try:
                 loc_all = scope.locator(selector)
-                if loc_all.count() == 0:
+                count = loc_all.count()
+                if count == 0:
                     continue
-                loc = loc_all.first
-                loc.wait_for(state="visible", timeout=500)
-                loc.fill(value)
-                return scope
+                for i in range(count):
+                    loc = loc_all.nth(i)
+                    try:
+                        loc.wait_for(state="visible", timeout=500)
+                        loc.fill(value)
+                        return scope
+                    except Exception as e:
+                        last_err = e
+                        continue
             except Exception as e:
                 last_err = e
                 continue
@@ -276,12 +289,18 @@ def _check_first(page: Page | Frame, selector: str, *, timeout: int = 15000):
         for scope in _scopes(page):
             try:
                 loc_all = scope.locator(selector)
-                if loc_all.count() == 0:
+                count = loc_all.count()
+                if count == 0:
                     continue
-                loc = loc_all.first
-                loc.wait_for(state="attached", timeout=500)
-                loc.check(force=True)
-                return scope
+                for i in range(count):
+                    loc = loc_all.nth(i)
+                    try:
+                        loc.wait_for(state="attached", timeout=500)
+                        loc.check(force=True)
+                        return scope
+                    except Exception as e:
+                        last_err = e
+                        continue
             except Exception as e:
                 last_err = e
                 continue
