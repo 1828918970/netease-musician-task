@@ -38,8 +38,8 @@ def init_redis():
         if parsed_url.scheme == 'rediss':
             REDIS_CONF['ssl'] = True
         
-        # 创建连接池
-        REDIS_POOL = redis.ConnectionPool(**REDIS_CONF)
+        # 创建连接池。from_url 可以正确处理 rediss:// 的 TLS 参数。
+        REDIS_POOL = redis.ConnectionPool.from_url(REDIS_URL, decode_responses=True)
         
         # 测试连接
         redis_conn = redis.Redis(connection_pool=REDIS_POOL)
