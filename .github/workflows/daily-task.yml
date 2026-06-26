@@ -20,6 +20,7 @@ jobs:
       REDIS_URL: ${{ secrets.REDIS_URL }}
       NETEASE_PHONE: ${{ secrets.NETEASE_PHONE }}
       NETEASE_PASSWORD: ${{ secrets.NETEASE_PASSWORD }}
+      NETEASE_UID: ${{ secrets.NETEASE_UID }}
       SEND_TIME: "09:30"
       EXECUTION_INTERVAL_DAYS: "7"
       MAX_MONTHLY_SENDS: "4"
@@ -72,6 +73,9 @@ jobs:
               "phone": phone,
               "password": os.environ["NETEASE_PASSWORD"],
           }
+          uid = os.environ.get("NETEASE_UID", "").strip()
+          if uid:
+              payload["uid"] = uid
           client.hset("netease:music:task", f"user:{phone}", json.dumps(payload, ensure_ascii=False))
           print("Redis task initialized")
           PY
