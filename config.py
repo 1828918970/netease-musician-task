@@ -31,9 +31,12 @@ def init_redis():
             'host': parsed_url.hostname or 'localhost',
             'port': parsed_url.port or 6379,
             'db': int(parsed_url.path.lstrip('/')) if parsed_url.path and parsed_url.path != '/' else 0,
-            'password': parsed_url.password,
+            'username': urllib.parse.unquote(parsed_url.username) if parsed_url.username else None,
+            'password': urllib.parse.unquote(parsed_url.password) if parsed_url.password else None,
             'decode_responses': True
         }
+        if parsed_url.scheme == 'rediss':
+            REDIS_CONF['ssl'] = True
         
         # 创建连接池
         REDIS_POOL = redis.ConnectionPool(**REDIS_CONF)
@@ -41,7 +44,8 @@ def init_redis():
         # 测试连接
         redis_conn = redis.Redis(connection_pool=REDIS_POOL)
         redis_conn.ping()
-        _logger.info(f"成功连接到Redis: {REDIS_URL}")
+        safe_url = f"{parsed_url.scheme}://{parsed_url.hostname or 'localhost'}:{parsed_url.port or 6379}/{REDIS_CONF['db']}"
+        _logger.info(f"成功连接到Redis: {safe_url}")
         return True
     except Exception as e:
         _logger.error(f"Redis连接失败: {e}")

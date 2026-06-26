@@ -1,0 +1,89 @@
+name: Daily Netease Musician Task
+
+on:
+  workflow_dispatch:
+  schedule:
+    # 09:30 Asia/Shanghai. GitHub may delay scheduled jobs.
+    - cron: "30 1 * * *"
+
+concurrency:
+  group: daily-netease-musician-task
+  cancel-in-progress: false
+
+jobs:
+  run-task:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      TZ: Asia/Shanghai
+      REDIS_URL: ${{ secrets.REDIS_URL }}
+      NETEASE_PHONE: ${{ secrets.NETEASE_PHONE }}
+      NETEASE_PASSWORD: ${{ secrets.NETEASE_PASSWORD }}
+      SEND_TIME: "09:30"
+      EXECUTION_INTERVAL_DAYS: "7"
+      MAX_MONTHLY_SENDS: "4"
+      LOGIN_METHOD: playwright
+      PLAYWRIGHT_PROFILE_BASEDIR: .playwright_profiles
+      PLAYWRIGHT_PROFILE_PER_USER: "1"
+      CUSTOM_WEBHOOK_URL: ${{ secrets.CUSTOM_WEBHOOK_URL }}
+      CUSTOM_WEBHOOK_METHOD: ${{ secrets.CUSTOM_WEBHOOK_METHOD }}
+      CUSTOM_WEBHOOK_HEADERS: ${{ secrets.CUSTOM_WEBHOOK_HEADERS }}
+      CUSTOM_WEBHOOK_BODY: ${{ secrets.CUSTOM_WEBHOOK_BODY }}
+      WECOM_WEBHOOK_KEY: ${{ secrets.WECOM_WEBHOOK_KEY }}
+      COOKIE_EXPIRE_DAYS: "7"
+      COOKIE_NOTIFY_BEFORE_DAYS: "1"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          python -m playwright install --with-deps chromium
+
+      - name: Validate secrets
+        shell: bash
+        run: |
+          test -n "$REDIS_URL" || (echo "REDIS_URL secret is missing" && exit 1)
+          test -n "$NETEASE_PHONE" || (echo "NETEASE_PHONE secret is missing" && exit 1)
+          test -n "$NETEASE_PASSWORD" || (echo "NETEASE_PASSWORD secret is missing" && exit 1)
+
+      - name: Initialize Redis task
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          import redis
+
+          client = redis.from_url(os.environ["REDIS_URL"], decode_responses=True)
+          client.ping()
+          phone = os.environ["NETEASE_PHONE"].strip()
+          payload = {
+              "phone": phone,
+              "password": os.environ["NETEASE_PASSWORD"],
+          }
+          client.hset("netease:music:task", f"user:{phone}", json.dumps(payload, ensure_ascii=False))
+          print("Redis task initialized")
+          PY
+
+      - name: Run task once
+        run: python main.py --once
+
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: netease-task-logs
+          path: |
+            log/
+            debug/
+          if-no-files-found: ignore
