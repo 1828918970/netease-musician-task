@@ -16,6 +16,7 @@ jobs:
     timeout-minutes: 60
     env:
       TZ: Asia/Shanghai
+      PYTHONUNBUFFERED: "1"
       REDIS_URL: ${{ secrets.REDIS_URL }}
       NETEASE_PHONE: ${{ secrets.NETEASE_PHONE }}
       NETEASE_PASSWORD: ${{ secrets.NETEASE_PASSWORD }}
@@ -76,7 +77,8 @@ jobs:
           PY
 
       - name: Run task once
-        run: python main.py --once
+        timeout-minutes: 15
+        run: python -u main.py --once
 
       - name: Upload logs
         if: always()
